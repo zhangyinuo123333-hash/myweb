@@ -6168,20 +6168,8 @@
           }, 400);
         });
 
-        // 移除原有的固定成功逻辑，改写为 Firebase 推送逻辑将在 module script 中进行
-        // 我们会通过自定义事件或者将 firebase 逻辑单独放在底部引入
-        contactForm.addEventListener("submit", (e) => {
-          e.preventDefault();
-          // Dispatch a custom event to handled by the module script
-          const name = document.getElementById("name").value.trim();
-          const email = document.getElementById("email").value.trim();
-          const message = document.getElementById("message").value.trim();
-          
-          const submitEvent = new CustomEvent('submitContact', {
-            detail: { name, email, message }
-          });
-          window.dispatchEvent(submitEvent);
-        });
+        // The contact form submit is now handled securely in the module script at the bottom
+
 
         // Info Modal Logic
         const infoModal = document.getElementById("infoModal");
@@ -6275,45 +6263,50 @@
         appId: "1:499445495919:web:67ac38ba91ff21e26b759a"
       };
 
-      try {
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
 
-        window.addEventListener('submitContact', async (e) => {
-          const { name, email, message } = e.detail;
+      // 直接绑定表单提交事件，不再通过中转站
+      const form = document.getElementById("contactForm");
+      
+      if (form) {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault(); // 阻止页面跳转刷新
           
+          // 获取数据
+          const name = document.getElementById("name")?.value.trim();
+          const email = document.getElementById("email")?.value.trim() || '未填写';
+          const message = document.getElementById("message")?.value.trim();
+
           if (!name || !message) {
-            alert("麻烦填写一下您的称呼和内容哦！");
+            alert("请完整填写称呼和留言内容哦~");
             return;
           }
 
           try {
             const messagesRef = ref(database, 'messages');
             await push(messagesRef, {
-              name,
-              email: email || '未填写联系方式',
-              message,
-              createdAt: new Date().toISOString()
+              name: name,
+              email: email,
+              message: message,
+              createdAt: new Date().toLocaleString()
             });
 
-            const contactForm = document.getElementById("contactForm");
-            const contactModalHeader = document.getElementById("contactModalHeader");
-            const contactSuccess = document.getElementById("contactSuccess");
-
-            // 显示成功状态并提示
-            contactForm.style.display = "none";
-            contactModalHeader.style.display = "none";
-            contactSuccess.style.display = "flex";
             alert("留言发送成功！");
-            contactForm.reset();
-
+            form.reset(); // 清空表单
+            
+            // 如果你有成功提示框，可以取消下面几行的注释
+            document.getElementById("contactSuccess").style.display = "flex";
+            document.getElementById("contactModalHeader").style.display = "none";
+            form.style.display = "none";
+            
           } catch (error) {
-            console.error("提交留言失败:", error);
-            alert("留言发送失败，请稍后再试: " + error.message);
+            console.error("提交失败:", error);
+            alert("发送失败，请检查网络: " + error.message);
           }
         });
-      } catch (err) {
-        console.error("Firebase Initialization Error:", err);
+      } else {
+        console.error("找不到 ID 为 contactForm 的表单，请检查 HTML 结构");
       }
     </script>
   </body>
