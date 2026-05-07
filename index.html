@@ -6251,7 +6251,7 @@
     <!-- Firebase Realtime Database Logic -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-      import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+      import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyCqgjQtOV8wOEpRQG8QtQryi_tNqbL1SPE",
@@ -6289,7 +6289,7 @@
               name: name,
               email: email,
               message: message,
-              createdAt: new Date().toLocaleString()
+              createdAt: new Date().toLocaleString() // 使用当前时间
             });
 
             alert("留言发送成功！");
@@ -6308,6 +6308,65 @@
       } else {
         console.error("找不到 ID 为 contactForm 的表单，请检查 HTML 结构");
       }
+
+      // ==========================================
+      // 后台留言板：实时读取并渲染数据
+      // ==========================================
+      
+      let currentMessages = []; // 全局保存最新的留言数据
+
+      // 渲染真实留言到后台的方法
+      const renderAdminMessages = () => {
+        const adminMessagesList = document.getElementById("adminMessagesList");
+        if (!adminMessagesList) return; // 如果元素不存在（后台没打开），则静默跳过
+
+        // 1. 如果没有数据，显示暂无留言
+        if (currentMessages.length === 0) {
+          adminMessagesList.innerHTML = `<div style="color: #888; font-size: 14px; text-align: center; padding: 20px;">暂无留言</div>`;
+          return;
+        }
+
+        // 2. 将数据遍历，为了确保最新提交显示在最上面，将数组倒序
+        const reversedMessages = [...currentMessages].reverse();
+
+        // 3. 用相同的样式，模板字符串拼接
+        const html = reversedMessages.map(m => `
+          <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; border: 1px solid #eee;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #666;">
+              <span>${m.name} (${m.email})</span>
+              <span>${m.createdAt || ''}</span>
+            </div>
+            <div style="font-size: 14px; color: #333; white-space: pre-wrap; line-height: 1.5;">${m.message}</div>
+          </div>
+        `).join('');
+
+        // 4. 清空静态数据并动态渲染
+        adminMessagesList.innerHTML = html;
+      };
+
+      // 监听 messages 节点的数据变化
+      onValue(ref(database, 'messages'), (snapshot) => {
+        const data = snapshot.val();
+        currentMessages = [];
+        if (data) {
+          for (let key in data) {
+            currentMessages.push({ id: key, ...data[key] });
+          }
+        }
+        // 当数据变化时，立刻尝试渲染
+        renderAdminMessages();
+      });
+
+      // 因为后台面板（Admin panel）是后续通过点击按钮动态插入 DOM 的，
+      // 所以使用 MutationObserver 监控 DOM，一旦它出现了，就立刻塞入真实数据
+      const observer = new MutationObserver((mutations) => {
+        const adminMessagesList = document.getElementById("adminMessagesList");
+        if (adminMessagesList && adminMessagesList.innerHTML.includes("加载中")) {
+          renderAdminMessages();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
     </script>
   </body>
 </html>
