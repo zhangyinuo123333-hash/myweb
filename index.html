@@ -564,6 +564,9 @@
         position: relative;
         z-index: 2;
       }
+      .hero-icons-row.paused {
+        animation-play-state: paused;
+      }
 
       .hero-icons-row > .icon-wrapper {
         flex: 0 0 6.25%;
@@ -994,18 +997,20 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        max-width: 1400px;
+        max-width: 1800px;
         width: 100%;
-        margin: 80px auto;
-        padding: 60px 0;
+        margin: 100px auto 140px;
+        padding: 60px 20px;
         perspective: 2500px;
+        overflow: visible;
       }
 
       .folder-item {
         position: relative;
-        width: 300px;
-        height: 400px;
-        margin-left: -160px;
+        width: clamp(300px, 20vw, 380px);
+        aspect-ratio: 300 / 400;
+        height: auto;
+        margin-left: clamp(-160px, -10.6vw, -200px);
         transition:
           transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
           filter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1163,7 +1168,7 @@
       }
 
       .about-headline {
-        font-size: clamp(32px, 4vw, 42px);
+        font-size: clamp(36px, 6vw, 72px);
         font-weight: 700;
         line-height: 1.1;
         letter-spacing: -1px;
@@ -4427,12 +4432,11 @@
             />
           </div>
           <div class="form-group">
-            <label for="email">联系方式</label>
+            <label for="email">联系方式（选填）</label>
             <input
               type="text"
               id="email"
-              placeholder="邮箱或微信号（这样我才能回复你呀）"
-              required
+              placeholder="邮箱或微信号（如果期待我的回复就留下吧～）"
             />
           </div>
           <div class="form-group">
@@ -4636,6 +4640,17 @@
                 if (el !== wrapper) el.classList.remove("expanded");
               });
             wrapper.classList.toggle("expanded");
+            
+            // Toggle paused state on the parent container
+            const row = wrapper.closest(".hero-icons-row");
+            if (row) {
+                if (wrapper.classList.contains("expanded")) {
+                    row.classList.add("paused");
+                } else {
+                    const hasExpanded = row.querySelector(".icon-wrapper.expanded");
+                    if (!hasExpanded) row.classList.remove("paused");
+                }
+            }
           } else {
             // clicking outside collapses all
             document
@@ -4643,6 +4658,10 @@
               .forEach((el) => {
                 el.classList.remove("expanded");
               });
+            // remove paused from all rows
+            document.querySelectorAll(".hero-icons-row").forEach(row => {
+                row.classList.remove("paused");
+            });
           }
         });
       }

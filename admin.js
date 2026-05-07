@@ -214,12 +214,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("email")?.value;
       const message = document.getElementById("message")?.value;
 
-      if (name && email && message) {
+      if (name && message) {
         let messages = JSON.parse(localStorage.getItem('portfolioMessages') || '[]');
         messages.push({
           date: new Date().toLocaleString(),
           name,
-          email,
+          email: email || '未留联系方式',
           message
         });
         localStorage.setItem('portfolioMessages', JSON.stringify(messages));
