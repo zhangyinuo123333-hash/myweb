@@ -7,16 +7,7 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
-      // Anyone can add a message
-      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'message', 'createdAt']) &&
-                       request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
-                       request.resource.data.email is string && request.resource.data.email.size() <= 150 &&
-                       request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 2000 &&
-                       request.resource.data.createdAt == request.time;
-      
-      // Read access should technically be restricted to the owner/admin, 
-      // but since we do not have an auth setup (no login feature needed right now),
-      // we'll allow public reads so the owner can see the messages in the modal without logging in.
+      allow create: if true;
       allow read: if true;
     }
   }
