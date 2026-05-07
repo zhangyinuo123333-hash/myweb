@@ -1,3 +1,5 @@
+import { addMessage, getMessages } from './firebase.js';
+
 // admin.js
 // 这是一个轻量级的本地存储后台管理模块，专门在提交前替换页面DOM数据
 
@@ -215,6 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const message = document.getElementById("message")?.value;
 
       if (name && message) {
+        // Save to Firebase
+        addMessage(name, email, message).catch(console.error);
+
+        // Also save to localStorage as a fallback
         let messages = JSON.parse(localStorage.getItem('portfolioMessages') || '[]');
         messages.push({
           date: new Date().toLocaleString(),
@@ -660,19 +666,33 @@ function openAdminPanel() {
     });
   };
 
-  const renderMessages = () => {
+  const renderMessages = async () => {
     const list = document.getElementById("adminMessagesList");
+    list.innerHTML = `<div style="color: #888; font-size: 14px; text-align: center; padding: 20px;">加载中...</div>`;
+    
     let messages = [];
     try {
-      messages = JSON.parse(localStorage.getItem('portfolioMessages') || '[]');
-    } catch(e) {}
+      const fbMessages = await getMessages();
+      messages = fbMessages.map(m => ({
+        name: m.name,
+        email: m.email,
+        message: m.message,
+        date: m.createdAt ? m.createdAt.toDate().toLocaleString() : new Date().toLocaleString()
+      }));
+    } catch(err) {
+      console.error("Firebase read err: ", err);
+      try {
+        messages = JSON.parse(localStorage.getItem('portfolioMessages') || '[]');
+        messages = messages.reverse();
+      } catch(e) {}
+    }
     
     if (messages.length === 0) {
       list.innerHTML = `<div style="color: #888; font-size: 14px; text-align: center; padding: 20px;">暂无留言记录</div>`;
       return;
     }
     
-    list.innerHTML = messages.reverse().map((m, i) => `
+    list.innerHTML = messages.map((m, i) => `
       <div style="background: white; border: 1px solid #eee; border-radius: 8px; padding: 16px;">
         <div style="color: #888; font-size: 12px; margin-bottom: 8px; display: flex; justify-content: space-between;">
           <span>${m.name} (${m.email})</span>
