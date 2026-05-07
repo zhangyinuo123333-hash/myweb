@@ -480,7 +480,7 @@
         z-index: 10;
         border-radius: 55px; /* Capsule shape: radius >= width/2 */
         border: 4px solid var(--white);
-        background-image: url("./flower.png");
+        background-image: url("https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAIW7Wn8f0KnOi-DOvL_y5Jj5pY97O1QAAI1HQAChunhV11kzPU10xiTOwQ.png");
         background-size: cover;
         background-position: center;
         cursor: pointer;
@@ -3083,7 +3083,7 @@
     <div class="desktop-pet" id="desktop-pet">
       <div class="pet-message">你好呀！(ฅ´ω`ฅ)</div>
       <img
-        src="./desktop_pet.png"
+        src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAIW7mn8f0SEXv66DV6sKxKDjolPk-vWAAI2HQAChunhV0xZbvfoj6OBOwQ.png"
         alt="Desktop Pet"
         onerror="
           this.style.display = 'none';
@@ -3707,13 +3707,13 @@
               style="width: 100%; height: 100%; position: relative"
             >
               <img
-                src="./regenerated_image_1777463671536.png"
+                src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAIW7Gn8f0AJef0dtKa8FvuyfwUZDtWnAAI0HQAChunhV77zELtIpDWJOwQ.png"
                 class="img-blurred-bg"
                 id="profile-bg"
                 alt="Profile Background"
               />
               <img
-                src="./regenerated_image_1777463671536.png"
+                src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAIW7Gn8f0AJef0dtKa8FvuyfwUZDtWnAAI0HQAChunhV77zELtIpDWJOwQ.png"
                 class="img-subject"
                 id="profile-main"
                 alt="Profile Subject"
@@ -4519,7 +4519,7 @@
           "
         >
           <img
-            src="./wechat-qrcode.png"
+            src="https://img2.nloln.de/file/BQACAgUAAyEGAASLVN5eAAIW62n8fz7ryuhAFT9zTWN9-J6wuYv9AAIzHQAChunhVz8QzaVpQQV-OwQ.png"
             alt="微信二维码"
             style="
               width: 320px;
@@ -4535,7 +4535,7 @@
       </div>
     </div>
 
-    <script src="./admin.js"></script>
+    <script type="module" src="./admin.js"></script>
     <script>
       const chars = document.querySelectorAll(".hover-char");
       let activeChar = null;
@@ -5760,8 +5760,9 @@
           resetBtn.addEventListener("click", resetRefTransform);
         }
 
-        folderItems.forEach((folder) => {
-          folder.addEventListener("click", () => {
+        document.addEventListener("click", (e) => {
+          const folder = e.target.closest(".folder-item");
+          if (folder) {
             const title = folder.getAttribute("data-title") || "WORK IN PROGRESS";
             const subtitle = folder.getAttribute("data-subtitle") || "制作中";
             const softwareStr = folder.getAttribute("data-software") || "";
@@ -5875,7 +5876,7 @@
             }
 
             folderModal.classList.add("is-active");
-          });
+          }
         });
 
         const closeFolderModal = () => {
