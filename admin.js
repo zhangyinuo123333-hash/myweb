@@ -205,6 +205,7 @@ initDynamicContent();
 
 // 2. 注入后台管理 UI 和 留言板拦截
 const initAdmin = () => {
+  console.log("Admin module initializing...");
   renderAdminButton();
 
   // 留言板拦截
@@ -687,6 +688,7 @@ function openAdminPanel() {
         date: m.createdAt ? m.createdAt.toDate().toLocaleString() : new Date().toLocaleString()
       }));
     } catch(err) {
+      alert("Firebase error: " + err.message);
       console.error("Firebase read err: ", err);
       try {
         messages = JSON.parse(localStorage.getItem('portfolioMessages') || '[]');
