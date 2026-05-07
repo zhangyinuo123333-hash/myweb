@@ -204,7 +204,7 @@ async function initDynamicContent() {
 initDynamicContent();
 
 // 2. 注入后台管理 UI 和 留言板拦截
-document.addEventListener("DOMContentLoaded", () => {
+const initAdmin = () => {
   renderAdminButton();
 
   // 留言板拦截
@@ -232,7 +232,14 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-});
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAdmin);
+} else {
+  initAdmin();
+}
+
 
 function renderAdminButton() {
   const btn = document.createElement("button");
