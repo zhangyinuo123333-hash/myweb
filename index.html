@@ -730,11 +730,11 @@
 
       .scroll-indicator:hover {
         opacity: 1;
-        transform: scale(1.1);
+        transform: scale(1.1) translateY(4px);
       }
 
       .scroll-indicator:active {
-        transform: translateY(10px) scale(0.9);
+        transform: scale(0.95) translateY(12px);
       }
 
       /* About Section Redesign */
@@ -3161,6 +3161,18 @@
         color: var(--text-secondary);
         font-size: 15px;
         margin: 0;
+      }
+
+      /* Scroll Reveal Animation */
+      .reveal-item {
+        opacity: 0;
+        transform: translateY(40px) scale(0.98);
+        transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        will-change: opacity, transform;
+      }
+      .reveal-item.is-visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
       }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
@@ -6697,6 +6709,49 @@
         }
       });
       observer.observe(document.body, { childList: true, subtree: true });
+
+      // ==========================================
+      // Scroll Reveal Animation Initialization
+      // ==========================================
+      
+      // Auto-assign the .reveal-item class to components we want to animate
+      const elementsToAnimate = document.querySelectorAll(
+        ".about-headline, .about-bio p, .card-stack-container, .about-image-frame, " +
+        ".stat-card, .status-header, .status-item, .folder-item, .bottom-content-wrapper > *, " +
+        ".nav-section a, .title-main, .designer-title, .hero-title, .hero-icons-row, .btn-black, .scroll-indicator"
+      );
+      
+      elementsToAnimate.forEach(el => {
+        el.classList.add("reveal-item");
+      });
+
+      const revealObserver = new IntersectionObserver((entries) => {
+        const intersecting = entries.filter(e => e.isIntersecting);
+        
+        intersecting.forEach((entry, index) => {
+          // Stagger effect
+          entry.target.style.transitionDelay = `${index * 100}ms`;
+          
+          // RequestAnimationFrame is used here to ensure the delay takes effect
+          // before adding the active class, guaranteeing a smooth stagger.
+          requestAnimationFrame(() => {
+            entry.target.classList.add("is-visible");
+          });
+          
+          revealObserver.unobserve(entry.target);
+        });
+      }, {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px"
+      });
+
+      // Start observing all `.reveal-item` elements after a tiny delay 
+      // (so elements at the top don't skip the animation too fast)
+      setTimeout(() => {
+        document.querySelectorAll('.reveal-item').forEach(item => {
+          revealObserver.observe(item);
+        });
+      }, 100);
 
     </script>
   </body>
