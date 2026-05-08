@@ -6656,29 +6656,63 @@
       // 访客记录自动写入（只记录一次/会话）
       // ==========================================
       if (!sessionStorage.getItem('hasVisited')) {
-        try {
-          const ua = navigator.userAgent;
-          let os = "Unknown OS";
-          if (ua.includes("Win")) os = "Windows";
-          else if (ua.includes("Mac")) os = "MacOS";
-          else if (ua.includes("Android")) os = "Android";
-          else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
-          else if (ua.includes("Linux")) os = "Linux";
+        (async () => {
+          try {
+            const ua = navigator.userAgent;
+            let os = "Unknown OS";
+            if (ua.includes("Win")) os = "Windows";
+            else if (ua.includes("Mac")) os = "MacOS";
+            else if (ua.includes("Android")) os = "Android";
+            else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+            else if (ua.includes("Linux")) os = "Linux";
 
-          let browser = "Unknown Browser";
-          if (ua.includes("Edg")) browser = "Edge";
-          else if (ua.includes("Chrome")) browser = "Chrome";
-          else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
-          else if (ua.includes("Firefox")) browser = "Firefox";
+            let browser = "Unknown Browser";
+            if (ua.includes("Edg")) browser = "Edge";
+            else if (ua.includes("Chrome")) browser = "Chrome";
+            else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+            else if (ua.includes("Firefox")) browser = "Firefox";
 
-          push(ref(database, 'visits'), {
-            os_browser: `${os} - ${browser}`,
-            timestamp: new Date().toLocaleString()
-          });
-          sessionStorage.setItem('hasVisited', 'true');
-        } catch(e) {
-          console.error("记录访客失败：", e);
-        }
+            const language = navigator.language || "Unknown";
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+            const resolution = `${window.screen.width}x${window.screen.height}`;
+            const referrer = document.referrer || '直接访问';
+
+            let geo = {
+              country: "Unknown",
+              region: "Unknown",
+              city: "Unknown",
+              ip: "Unknown"
+            };
+
+            try {
+              const res = await fetch('https://ipapi.co/json/');
+              if (res.ok) {
+                const data = await res.json();
+                geo.country = data.country_name || data.country || "Unknown";
+                geo.region = data.region || "Unknown";
+                geo.city = data.city || "Unknown";
+                geo.ip = data.ip || "Unknown";
+              }
+            } catch (err) {
+              console.warn("地理位置获取失败:", err);
+            }
+
+            push(ref(database, 'visits'), {
+              os_browser: `${os} - ${browser}`,
+              os: os,
+              browser: browser,
+              language: language,
+              timezone: timezone,
+              resolution: resolution,
+              referrer: referrer,
+              geo: geo,
+              timestamp: new Date().toLocaleString()
+            });
+            sessionStorage.setItem('hasVisited', 'true');
+          } catch(e) {
+            console.error("记录访客失败：", e);
+          }
+        })();
       }
 
       // ==========================================
@@ -6728,14 +6762,39 @@
         }
 
         const reversedVisits = [...currentVisits].reverse();
-        const html = reversedVisits.map(v => `
-          <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; border: 1px solid #eee;">
-            <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 14px; color: #666;">
-              <span>访客设备: ${v.os_browser || 'Unknown'}</span>
-              <span>${v.timestamp || ''}</span>
+        const html = reversedVisits.map(v => {
+          const geo = v.geo || {};
+          const city = geo.city && geo.city !== "Unknown" ? geo.city : "未知地区";
+          const region = geo.region && geo.region !== "Unknown" ? geo.region : "";
+          const location = region ? `${city}, ${region}` : city;
+          const osBrowser = v.os_browser || 'Unknown';
+          const ip = geo.ip || "Unknown IP";
+          const time = v.timestamp || '';
+          
+          return `
+          <div style="background: #fff; padding: 18px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">
+              <div>
+                <div style="font-size: 16px; font-weight: 700; color: #111827; letter-spacing: -0.3px;">${location}</div>
+                <div style="font-size: 13px; color: #6b7280; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">${ip} · ${geo.country || 'UnknownCountry'}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 14px; font-weight: 600; color: #374151;">${osBrowser}</div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 6px;">${time}</div>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #4b5563;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="display: flex; gap: 8px;"><span style="color: #9ca3af; flex: 0 0 70px;">Language:</span> <span style="font-weight: 500;">${v.language || 'Unknown'}</span></span>
+                <span style="display: flex; gap: 8px;"><span style="color: #9ca3af; flex: 0 0 70px;">Timezone:</span> <span style="font-weight: 500;">${v.timezone || 'Unknown'}</span></span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="display: flex; gap: 8px;"><span style="color: #9ca3af; flex: 0 0 70px;">Resolution:</span> <span style="font-weight: 500;">${v.resolution || 'Unknown'}</span></span>
+                <span style="display: flex; gap: 8px;" title="${v.referrer || '直接访问'}"><span style="color: #9ca3af; flex: 0 0 70px;">Referrer:</span> <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${v.referrer || '直接访问'}</span></span>
+              </div>
             </div>
           </div>
-        `).join('');
+        `}).join('');
 
         list.innerHTML = html;
       };
