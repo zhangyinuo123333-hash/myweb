@@ -6685,20 +6685,18 @@
             };
 
             try {
-              const res = await fetch('https://ipwho.is/');
+              const res = await fetch('https://ipinfo.io/json');
               if (res.ok) {
                 const data = await res.json();
-                if (data.success) {
-                  geo.country = data.country || "Unknown";
-                  geo.region = data.region || "Unknown";
-                  geo.city = data.city || "Unknown";
-                  geo.ip = data.ip || "Unknown";
-                } else {
-                  console.warn("地理位置解析失败:", data.message);
-                }
+                geo.country = data.country || "Unknown";
+                geo.region = data.region || "Unknown";
+                geo.city = data.city || "Unknown";
+                geo.ip = data.ip || "Unknown";
+              } else {
+                console.warn("地理位置解析失败，状态码:", res.status);
               }
             } catch (err) {
-              console.warn("地理位置获取失败:", err);
+              console.error("IP接口报错详细信息:", err);
             }
 
             push(ref(database, 'visits'), {
