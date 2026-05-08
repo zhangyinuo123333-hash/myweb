@@ -402,6 +402,11 @@ function openAdminPanel() {
       <h3>留言板 / Messages</h3>
       <div id="adminMessagesList" style="display:flex; flex-direction:column; gap:12px;"></div>
     </div>
+
+    <div class="admin-section">
+      <h3>访客记录 / Visitor Logs</h3>
+      <div id="adminVisitorLogsList" style="display:flex; flex-direction:column; gap:12px; max-height: 400px; overflow-y: auto;"></div>
+    </div>
   `;
 
   const footer = document.createElement("div");
@@ -677,6 +682,11 @@ function openAdminPanel() {
   const renderMessages = async () => {
     const list = document.getElementById("adminMessagesList");
     list.innerHTML = `<div style="color: #888; font-size: 14px; text-align: center; padding: 20px;">加载中...</div>`;
+    
+    const logsList = document.getElementById("adminVisitorLogsList");
+    if (logsList) {
+      logsList.innerHTML = `<div style="color: #888; font-size: 14px; text-align: center; padding: 20px;">加载中...</div>`;
+    }
     
     let messages = [];
     try {

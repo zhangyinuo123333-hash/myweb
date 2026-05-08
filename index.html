@@ -6653,10 +6653,40 @@
       }
 
       // ==========================================
+      // 访客记录自动写入（只记录一次/会话）
+      // ==========================================
+      if (!sessionStorage.getItem('hasVisited')) {
+        try {
+          const ua = navigator.userAgent;
+          let os = "Unknown OS";
+          if (ua.includes("Win")) os = "Windows";
+          else if (ua.includes("Mac")) os = "MacOS";
+          else if (ua.includes("Android")) os = "Android";
+          else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+          else if (ua.includes("Linux")) os = "Linux";
+
+          let browser = "Unknown Browser";
+          if (ua.includes("Edg")) browser = "Edge";
+          else if (ua.includes("Chrome")) browser = "Chrome";
+          else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+          else if (ua.includes("Firefox")) browser = "Firefox";
+
+          push(ref(database, 'visits'), {
+            os_browser: `${os} - ${browser}`,
+            timestamp: new Date().toLocaleString()
+          });
+          sessionStorage.setItem('hasVisited', 'true');
+        } catch(e) {
+          console.error("记录访客失败：", e);
+        }
+      }
+
+      // ==========================================
       // 后台留言板：实时读取并渲染数据
       // ==========================================
       
       let currentMessages = []; // 全局保存最新的留言数据
+      let currentVisits = []; // 全局保存最新的访客数据
 
       // 渲染真实留言到后台的方法
       const renderAdminMessages = () => {
@@ -6687,6 +6717,29 @@
         adminMessagesList.innerHTML = html;
       };
 
+      // 渲染访客记录到后台的方法
+      const renderAdminVisits = () => {
+        const list = document.getElementById("adminVisitorLogsList");
+        if (!list) return;
+
+        if (currentVisits.length === 0) {
+          list.innerHTML = `<div style="color: #888; font-size: 14px; text-align: center; padding: 20px;">暂无访问记录</div>`;
+          return;
+        }
+
+        const reversedVisits = [...currentVisits].reverse();
+        const html = reversedVisits.map(v => `
+          <div style="background: #f9f9f9; padding: 16px; border-radius: 8px; border: 1px solid #eee;">
+            <div style="display: flex; justify-content: space-between; font-weight: 500; font-size: 14px; color: #666;">
+              <span>访客设备: ${v.os_browser || 'Unknown'}</span>
+              <span>${v.timestamp || ''}</span>
+            </div>
+          </div>
+        `).join('');
+
+        list.innerHTML = html;
+      };
+
       // 监听 messages 节点的数据变化
       onValue(ref(database, 'messages'), (snapshot) => {
         const data = snapshot.val();
@@ -6700,12 +6753,28 @@
         renderAdminMessages();
       });
 
+      // 监听 visits 节点的数据变化
+      onValue(ref(database, 'visits'), (snapshot) => {
+        const data = snapshot.val();
+        currentVisits = [];
+        if (data) {
+          for (let key in data) {
+            currentVisits.push({ id: key, ...data[key] });
+          }
+        }
+        renderAdminVisits();
+      });
+
       // 因为后台面板（Admin panel）是后续通过点击按钮动态插入 DOM 的，
       // 所以使用 MutationObserver 监控 DOM，一旦它出现了，就立刻塞入真实数据
       const observer = new MutationObserver((mutations) => {
         const adminMessagesList = document.getElementById("adminMessagesList");
         if (adminMessagesList && adminMessagesList.innerHTML.includes("加载中")) {
           renderAdminMessages();
+        }
+        const adminVisitorLogsList = document.getElementById("adminVisitorLogsList");
+        if (adminVisitorLogsList && adminVisitorLogsList.innerHTML.includes("加载中")) {
+          renderAdminVisits();
         }
       });
       observer.observe(document.body, { childList: true, subtree: true });
