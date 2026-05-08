@@ -6685,13 +6685,17 @@
             };
 
             try {
-              const res = await fetch('https://ipapi.co/json/');
+              const res = await fetch('https://ipwho.is/');
               if (res.ok) {
                 const data = await res.json();
-                geo.country = data.country_name || data.country || "Unknown";
-                geo.region = data.region || "Unknown";
-                geo.city = data.city || "Unknown";
-                geo.ip = data.ip || "Unknown";
+                if (data.success) {
+                  geo.country = data.country || "Unknown";
+                  geo.region = data.region || "Unknown";
+                  geo.city = data.city || "Unknown";
+                  geo.ip = data.ip || "Unknown";
+                } else {
+                  console.warn("地理位置解析失败:", data.message);
+                }
               }
             } catch (err) {
               console.warn("地理位置获取失败:", err);
