@@ -6652,70 +6652,8 @@
         console.error("找不到 ID 为 contactForm 的表单，请检查 HTML 结构");
       }
 
+      // 访客记录写入逻辑已迁移至 src/useBehaviorTracker.ts 中（由 main.tsx 挂载）
       // ==========================================
-      // 访客记录自动写入（只记录一次/会话）
-      // ==========================================
-      if (!sessionStorage.getItem('hasVisited')) {
-        (async () => {
-          try {
-            const ua = navigator.userAgent;
-            let os = "Unknown OS";
-            if (ua.includes("Win")) os = "Windows";
-            else if (ua.includes("Mac")) os = "MacOS";
-            else if (ua.includes("Android")) os = "Android";
-            else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
-            else if (ua.includes("Linux")) os = "Linux";
-
-            let browser = "Unknown Browser";
-            if (ua.includes("Edg")) browser = "Edge";
-            else if (ua.includes("Chrome")) browser = "Chrome";
-            else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
-            else if (ua.includes("Firefox")) browser = "Firefox";
-
-            const language = navigator.language || "Unknown";
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
-            const resolution = `${window.screen.width}x${window.screen.height}`;
-            const referrer = document.referrer || '直接访问';
-
-            let geo = {
-              country: "Unknown",
-              region: "Unknown",
-              city: "Unknown",
-              ip: "Unknown"
-            };
-
-            try {
-              const res = await fetch('https://ipinfo.io/json');
-              if (res.ok) {
-                const data = await res.json();
-                geo.country = data.country || "Unknown";
-                geo.region = data.region || "Unknown";
-                geo.city = data.city || "Unknown";
-                geo.ip = data.ip || "Unknown";
-              } else {
-                console.warn("地理位置解析失败，状态码:", res.status);
-              }
-            } catch (err) {
-              console.error("IP接口报错详细信息:", err);
-            }
-
-            push(ref(database, 'visits'), {
-              os_browser: `${os} - ${browser}`,
-              os: os,
-              browser: browser,
-              language: language,
-              timezone: timezone,
-              resolution: resolution,
-              referrer: referrer,
-              geo: geo,
-              timestamp: new Date().toLocaleString()
-            });
-            sessionStorage.setItem('hasVisited', 'true');
-          } catch(e) {
-            console.error("记录访客失败：", e);
-          }
-        })();
-      }
 
       // ==========================================
       // 后台留言板：实时读取并渲染数据
@@ -6772,9 +6710,14 @@
           const osBrowser = v.os_browser || 'Unknown';
           const ip = geo.ip || "Unknown IP";
           const time = v.timestamp || '';
+
+          const behavior = v.behavior || {};
+          const timeOnPageStr = behavior.timeOnPage !== undefined ? `${behavior.timeOnPage}s` : '追踪中...';
+          const maxScrollStr = behavior.maxScrollDepth !== undefined ? `${behavior.maxScrollDepth}%` : '追踪中...';
+          const clicksCount = behavior.clicks ? behavior.clicks.length : 0;
           
           return `
-          <div style="background: #fff; padding: 18px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+          <div style="background: #fff; padding: 18px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin-bottom: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; border-bottom: 1px solid #f3f4f6; padding-bottom: 12px;">
               <div>
                 <div style="font-size: 16px; font-weight: 700; color: #111827; letter-spacing: -0.3px;">${location}</div>
@@ -6785,7 +6728,8 @@
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 6px;">${time}</div>
               </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #4b5563;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #4b5563; margin-bottom: 12px;">
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <span style="display: flex; gap: 8px;"><span style="color: #9ca3af; flex: 0 0 70px;">Language:</span> <span style="font-weight: 500;">${v.language || 'Unknown'}</span></span>
                 <span style="display: flex; gap: 8px;"><span style="color: #9ca3af; flex: 0 0 70px;">Timezone:</span> <span style="font-weight: 500;">${v.timezone || 'Unknown'}</span></span>
@@ -6793,6 +6737,21 @@
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <span style="display: flex; gap: 8px;"><span style="color: #9ca3af; flex: 0 0 70px;">Resolution:</span> <span style="font-weight: 500;">${v.resolution || 'Unknown'}</span></span>
                 <span style="display: flex; gap: 8px;" title="${v.referrer || '直接访问'}"><span style="color: #9ca3af; flex: 0 0 70px;">Referrer:</span> <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${v.referrer || '直接访问'}</span></span>
+              </div>
+            </div>
+
+            <div style="background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; gap: 16px;">
+              <div style="display: flex; flex-direction: column; flex: 1;">
+                <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">停留时间</span>
+                <span style="font-size: 14px; font-weight: 600; color: #0f172a; margin-top: 2px;">${timeOnPageStr}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; flex: 1;">
+                <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">最大滚动深度</span>
+                <span style="font-size: 14px; font-weight: 600; color: #0f172a; margin-top: 2px;">${maxScrollStr}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; flex: 1;">
+                <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">获取有效点击</span>
+                <span style="font-size: 14px; font-weight: 600; color: #0f172a; margin-top: 2px;">${clicksCount} 次</span>
               </div>
             </div>
           </div>
