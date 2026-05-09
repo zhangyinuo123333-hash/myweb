@@ -49,7 +49,12 @@ export function useBehaviorTracker() {
 
       let geo = { country: "Unknown", region: "Unknown", city: "Unknown", ip: "Unknown" };
       try {
-        const res = await fetch('https://ipinfo.io/json');
+        const fetchPromise = fetch('https://ipinfo.io/json');
+        const timeoutPromise = new Promise<Response>((_, reject) => 
+          setTimeout(() => reject(new Error('IP API request timeout (> 3s)')), 3000)
+        );
+        
+        const res = await Promise.race([fetchPromise, timeoutPromise]);
         if (res.ok) {
           const data = await res.json();
           geo.country = data.country || "Unknown";
@@ -60,7 +65,7 @@ export function useBehaviorTracker() {
           console.warn("地理位置解析失败，状态码:", res.status);
         }
       } catch (err) {
-        console.error("IP接口报错详细信息:", err);
+        console.warn("地理位置获取失败 (容错处理继续执行):", err);
       }
 
       try {

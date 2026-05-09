@@ -6626,6 +6626,16 @@
             return;
           }
 
+          const submitBtn = form.querySelector('button[type="submit"]');
+          const originalBtnText = submitBtn ? submitBtn.textContent : '发送';
+          
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '发送中...';
+            submitBtn.style.opacity = '0.7';
+            submitBtn.style.cursor = 'not-allowed';
+          }
+
           try {
             const messagesRef = ref(database, 'messages');
             await push(messagesRef, {
@@ -6646,6 +6656,13 @@
           } catch (error) {
             console.error("提交失败:", error);
             alert("发送失败，请检查网络: " + error.message);
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalBtnText;
+              submitBtn.style.opacity = '1';
+              submitBtn.style.cursor = 'pointer';
+            }
           }
         });
       } else {
