@@ -1,19 +1,19 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { useBehaviorTracker } from './useBehaviorTracker';
+import { usePageContext } from './useAppSession';
 
-console.log('Static clone mode active');
+console.log('App session initialized.');
 
-// 创建一个无UI的组件，专门用来运行行为追踪的 Hook
-function TrackerApp() {
-  useBehaviorTracker();
+// 创建一个无UI的组件，专门用来运行页面上下文的 Hook
+function PageSetupApp() {
+  usePageContext();
   return null;
 }
 
 // 在页面 body 注入挂载点
-const trackerRoot = document.createElement('div');
-trackerRoot.id = 'react-behavior-tracker-root';
-trackerRoot.style.display = 'none';
-document.body.appendChild(trackerRoot);
+const pageRoot = document.createElement('div');
+pageRoot.id = 'react-page-setup-root';
+pageRoot.style.display = 'none';
+document.body.appendChild(pageRoot);
 
-createRoot(trackerRoot).render(<TrackerApp />);
+createRoot(pageRoot).render(<PageSetupApp />);

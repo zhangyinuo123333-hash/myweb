@@ -15,18 +15,18 @@ interface ClickRecord {
   timestamp: string;
 }
 
-export function useBehaviorTracker() {
-  const visitKeyRef = useRef<string | null>(null);
+export function usePageContext() {
+  const recordIdRef = useRef<string | null>(null);
   const startTimeRef = useRef<number>(Date.now());
   const maxScrollRef = useRef<number>(0);
   const clicksRef = useRef<ClickRecord[]>([]);
 
   useEffect(() => {
     // 1. 初始化收集基础设备信息，并获取唯一 Key
-    const initVisit = async () => {
+    const initPageSession = async () => {
       // 避免重复记录（根据会话）
-      if (sessionStorage.getItem('hasVisited_tracker')) return;
-      sessionStorage.setItem('hasVisited_tracker', 'true');
+      if (sessionStorage.getItem('pageInitRecord')) return;
+      sessionStorage.setItem('pageInitRecord', 'true');
 
       const ua = navigator.userAgent;
       let os = "Unknown OS";
@@ -69,7 +69,7 @@ export function useBehaviorTracker() {
       }
 
       try {
-        const newVisitRef = push(ref(database, 'visits'), {
+        const newRecordRef = push(ref(database, 'visits'), {
           os_browser: `${os} - ${browser}`,
           os: os,
           browser: browser,
@@ -80,13 +80,20 @@ export function useBehaviorTracker() {
           geo: geo,
           timestamp: new Date().toLocaleString()
         });
-        visitKeyRef.current = newVisitRef.key;
+        recordIdRef.current = newRecordRef.key;
+        console.log("页面配置数据已成功上传");
       } catch (e) {
         console.error("记录访客失败：", e);
       }
     };
 
-    initVisit();
+    // 暴露给全局进行测试
+    (window as any).forceSendRecord = () => {
+      sessionStorage.removeItem('pageInitRecord'); // 清除标记以强制发送
+      initPageSession();
+    };
+
+    initPageSession();
 
     // 2. 监听最大滚动深度（使用定时器节流防止性能问题）
     let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -135,12 +142,12 @@ export function useBehaviorTracker() {
 
     // 4. 用户离开页面时更新行为数据
     const handleLeave = () => {
-      if (!visitKeyRef.current) return;
+      if (!recordIdRef.current) return;
       
       const timeOnPage = Math.floor((Date.now() - startTimeRef.current) / 1000); // 转换为秒
       
       const updates: Record<string, any> = {};
-      updates['/visits/' + visitKeyRef.current + '/behavior'] = {
+      updates['/visits/' + recordIdRef.current + '/behavior'] = {
         timeOnPage,
         maxScrollDepth: maxScrollRef.current,
         clicks: clicksRef.current
