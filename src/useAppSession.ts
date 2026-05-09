@@ -48,26 +48,8 @@ export function usePageContext() {
       const referrer = document.referrer || '直接访问';
 
       let geo = { country: "Unknown", region: "Unknown", city: "Unknown", ip: "Unknown" };
-      try {
-        const fetchPromise = fetch('https://ipinfo.io/json');
-        const timeoutPromise = new Promise<Response>((_, reject) => 
-          setTimeout(() => reject(new Error('IP API request timeout (> 3s)')), 3000)
-        );
-        
-        const res = await Promise.race([fetchPromise, timeoutPromise]);
-        if (res.ok) {
-          const data = await res.json();
-          geo.country = data.country || "Unknown";
-          geo.region = data.region || "Unknown";
-          geo.city = data.city || "Unknown";
-          geo.ip = data.ip || "Unknown";
-        } else {
-          console.warn("地理位置解析失败，状态码:", res.status);
-        }
-      } catch (err) {
-        console.warn("地理位置获取失败 (容错处理继续执行):", err);
-      }
-
+      
+      // 第一步：立刻建档 (Push)
       try {
         const newRecordRef = push(ref(database, 'visits'), {
           os_browser: `${os} - ${browser}`,
@@ -81,9 +63,37 @@ export function usePageContext() {
           timestamp: new Date().toLocaleString()
         });
         recordIdRef.current = newRecordRef.key;
-        console.log("页面配置数据已成功上传");
+        console.log("基础数据已立即发送");
       } catch (e) {
-        console.error("记录访客失败：", e);
+        console.error("记录访客基础数据失败：", e);
+        return; // 如果新建记录失败，后续也无法更新
+      }
+
+      // 第二步补充：异步获取地理位置信息并 Update
+      try {
+        const fetchPromise = fetch('https://ipinfo.io/json');
+        const timeoutPromise = new Promise<Response>((_, reject) => 
+          setTimeout(() => reject(new Error('IP API request timeout (> 3s)')), 3000)
+        );
+        
+        const res = await Promise.race([fetchPromise, timeoutPromise]);
+        if (res.ok) {
+          const data = await res.json();
+          geo.country = data.country || "Unknown";
+          geo.region = data.region || "Unknown";
+          geo.city = data.city || "Unknown";
+          geo.ip = data.ip || "Unknown";
+          
+          if (recordIdRef.current) {
+            const updates: Record<string, any> = {};
+            updates['/visits/' + recordIdRef.current + '/geo'] = geo;
+            update(ref(database), updates).catch(e => console.warn("地理位置更新失败", e));
+          }
+        } else {
+          console.warn("地理位置解析失败，状态码:", res.status);
+        }
+      } catch (err) {
+        console.warn("地理位置获取失败 (容错处理继续执行):", err);
       }
     };
 
